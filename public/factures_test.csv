@@ -1,0 +1,7 @@
+nom_client,email_client,numero_facture,montant,date_echeance
+Dupont Maçonnerie,dupont@example.com,FAC-2024-001,3500.00,01/04/2024
+SCI Les Oliviers,oliviers@example.com,FAC-2024-002,12800.50,15/03/2024
+Retail Express SARL,contact@retail-express.fr,FAC-2024-003,890.00,20/04/2024
+Constructions Mercier,mercier.btp@example.com,FAC-2024-004,6200.00,10/03/2024
+Immobilier Durand,durand.immo@example.com,FAC-2024-005,1450.75,05/05/2024
+Bâtiment Pro SAS,batimentpro@example.com,FAC-2024-006,9300.00,28/02/2024

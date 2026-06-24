@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  invoices  Invoice[]
+  templates EmailTemplate[]
+  settings  Settings?
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientName    String
+  clientEmail   String
+  invoiceNumber String
+  amount        Float
+  dueDate       DateTime
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reminders Reminder[]
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  step      Int
+  sentAt    DateTime @default(now())
+  subject   String
+  body      String
+  simulated Boolean  @default(false)
+}
+
+model EmailTemplate {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  step      Int
+  subject   String
+  body      String
+
+  @@unique([companyId, step])
+}
+
+model Settings {
+  id               String  @id @default(cuid())
+  companyId        String  @unique
+  company          Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reminderInterval Int     @default(5)
+}
