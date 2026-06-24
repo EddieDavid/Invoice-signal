@@ -16,7 +16,7 @@ type Invoice = {
 };
 
 type Toast = { id: number; message: string; type: "success" | "error" };
-type SortKey = "clientName" | "amount" | "daysOverdue" | "lastReminderStep";
+type SortKey = "clientName" | "invoiceNumber" | "amount" | "daysOverdue" | "status" | "lastReminderStep";
 type SortDir = "asc" | "desc";
 
 function StatusBadge({ status }: { status: string }) {
@@ -84,8 +84,10 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
       let valA: number | string = 0;
       let valB: number | string = 0;
       if (sortKey === "clientName") { valA = a.clientName.toLowerCase(); valB = b.clientName.toLowerCase(); }
+      else if (sortKey === "invoiceNumber") { valA = a.invoiceNumber.toLowerCase(); valB = b.invoiceNumber.toLowerCase(); }
       else if (sortKey === "amount") { valA = a.amount; valB = b.amount; }
       else if (sortKey === "daysOverdue") { valA = a.daysOverdue; valB = b.daysOverdue; }
+      else if (sortKey === "status") { valA = a.status; valB = b.status; }
       else if (sortKey === "lastReminderStep") { valA = a.lastReminderStep; valB = b.lastReminderStep; }
 
       if (valA < valB) return sortDir === "asc" ? -1 : 1;
@@ -267,7 +269,12 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
               >
                 Client <SortIcon active={sortKey === "clientName"} dir={sortDir} />
               </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">N° Facture</th>
+              <th
+                className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none"
+                onClick={() => toggleSort("invoiceNumber")}
+              >
+                N° Facture <SortIcon active={sortKey === "invoiceNumber"} dir={sortDir} />
+              </th>
               <th
                 className="text-right px-4 py-3 font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none"
                 onClick={() => toggleSort("amount")}
@@ -280,7 +287,12 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
               >
                 Retard <SortIcon active={sortKey === "daysOverdue"} dir={sortDir} />
               </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Statut</th>
+              <th
+                className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none"
+                onClick={() => toggleSort("status")}
+              >
+                Statut <SortIcon active={sortKey === "status"} dir={sortDir} />
+              </th>
               <th
                 className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer hover:text-gray-900 select-none"
                 onClick={() => toggleSort("lastReminderStep")}
