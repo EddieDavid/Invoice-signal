@@ -33,7 +33,7 @@ export async function sendEmail(opts: SendEmailOptions): Promise<void> {
   const resend = new Resend(process.env.RESEND_API_KEY);
 
   await resend.emails.send({
-    from: "relances@votredomaine.com",
+    from: "relances@invoicesignal.io",
     to: opts.to,
     subject: opts.subject,
     text: opts.body,
