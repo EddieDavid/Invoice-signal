@@ -40,6 +40,7 @@ export default async function DashboardPage() {
       clientEmail: inv.clientEmail,
       invoiceNumber: inv.invoiceNumber,
       amount: inv.amount,
+      createdAt: inv.createdAt.toISOString(),
       dueDate: inv.dueDate.toISOString(),
       status: inv.status,
       daysOverdue,
@@ -71,25 +72,31 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      {/* Cartes principales */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500 mb-1">Total impayé</p>
-          <p className="text-2xl font-bold text-gray-900">
+      {/* Cartes stats */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-gray-200 p-5">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Total impayé</p>
+          <p className="text-3xl font-bold text-gray-900">
             {totalUnpaid.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
           </p>
+          <p className="text-xs text-gray-400 mt-2">{unpaid.length} facture{unpaid.length > 1 ? "s" : ""} en cours</p>
         </div>
-        <div className="bg-white rounded-xl border border-red-100 bg-red-50 p-4">
-          <p className="text-sm text-red-600 mb-1">Montant à risque</p>
-          <p className="text-2xl font-bold text-red-700">
+        <div className="bg-white rounded-2xl border border-red-100 p-5">
+          <p className="text-xs font-medium text-red-400 uppercase tracking-wide mb-3">Montant à risque</p>
+          <p className="text-3xl font-bold text-red-600">
             {amountAtRisk.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
           </p>
-          <p className="text-xs text-red-400 mt-1">factures jaunes + rouges</p>
+          <p className="text-xs text-red-300 mt-2">risque moyen + élevé</p>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-sm text-gray-500 mb-1">Clients à contacter</p>
-          <p className="text-2xl font-bold text-orange-600">{needsAction.length}</p>
-          <p className="text-xs text-gray-400 mt-1">appel ou mise en demeure</p>
+        <div className="bg-white rounded-2xl border border-orange-100 p-5">
+          <p className="text-xs font-medium text-orange-400 uppercase tracking-wide mb-3">Clients à contacter</p>
+          <p className="text-3xl font-bold text-orange-600">{needsAction.length}</p>
+          <p className="text-xs text-orange-300 mt-2">appel ou mise en demeure</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-green-100 p-5">
+          <p className="text-xs font-medium text-green-500 uppercase tracking-wide mb-3">Factures payées</p>
+          <p className="text-3xl font-bold text-green-600">{invoices.filter((inv) => inv.status === "paid").length}</p>
+          <p className="text-xs text-green-300 mt-2">sur {invoices.length} au total</p>
         </div>
       </div>
 
@@ -99,21 +106,21 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3 bg-white rounded-xl border border-green-100 px-4 py-3">
             <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
             <div>
-              <p className="text-xs text-gray-500">Faible risque</p>
+              <p className="text-xs text-gray-400">Faible risque</p>
               <p className="font-bold text-gray-900">{greenCount} facture{greenCount > 1 ? "s" : ""}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 bg-white rounded-xl border border-amber-100 px-4 py-3">
             <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
             <div>
-              <p className="text-xs text-gray-500">Risque moyen</p>
+              <p className="text-xs text-gray-400">Risque moyen</p>
               <p className="font-bold text-gray-900">{yellowCount} facture{yellowCount > 1 ? "s" : ""}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 bg-white rounded-xl border border-red-100 px-4 py-3">
             <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
             <div>
-              <p className="text-xs text-gray-500">Risque élevé</p>
+              <p className="text-xs text-gray-400">Risque élevé</p>
               <p className="font-bold text-gray-900">{redCount} facture{redCount > 1 ? "s" : ""}</p>
             </div>
           </div>
