@@ -1,5 +1,23 @@
 import { prisma } from "./prisma";
 
+export async function sendSimpleEmail(opts: { to: string; subject: string; body: string }): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.log("\n📧 [MODE DÉMO] Email transactionnel simulé :");
+    console.log(`  À : ${opts.to}`);
+    console.log(`  Objet : ${opts.subject}`);
+    console.log(`  ---\n${opts.body}\n`);
+    return;
+  }
+  const { Resend } = await import("resend");
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  await resend.emails.send({
+    from: "noreply@invoicesignal.io",
+    to: opts.to,
+    subject: opts.subject,
+    text: opts.body,
+  });
+}
+
 interface SendEmailOptions {
   to: string;
   subject: string;

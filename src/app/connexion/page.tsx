@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function ConnexionPage() {
+function ConnexionForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "1";
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +44,12 @@ export default function ConnexionPage() {
           <h1 className="text-2xl font-bold text-gray-900">Connexion</h1>
           <p className="text-gray-500 text-sm mt-1">Accédez à votre tableau de bord</p>
         </div>
+
+        {resetSuccess && (
+          <p className="text-green-700 text-sm bg-green-50 px-3 py-2 rounded-lg mb-4 text-center">
+            Mot de passe modifié avec succès. Connectez-vous.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -81,8 +89,10 @@ export default function ConnexionPage() {
           </button>
         </form>
 
-        <p className="text-xs text-gray-400 text-center mt-4">
-          Mot de passe oublié ? Cette fonctionnalité sera disponible prochainement.
+        <p className="text-xs text-gray-500 text-center mt-4">
+          <Link href="/mot-de-passe-oublie" className="text-blue-600 hover:underline">
+            Mot de passe oublié ?
+          </Link>
         </p>
 
         <p className="text-center text-sm text-gray-500 mt-4">
@@ -93,5 +103,13 @@ export default function ConnexionPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ConnexionPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConnexionForm />
+    </Suspense>
   );
 }
