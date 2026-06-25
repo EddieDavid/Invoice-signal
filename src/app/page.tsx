@@ -267,8 +267,13 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-slate-100 py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center text-sm text-slate-400">
-          © 2026 InvoiceSignal — Assistant de recouvrement intelligent pour TPE/PME
+        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-400">
+          <span>© 2026 InvoiceSignal — Eddie David YEDE NKA</span>
+          <div className="flex items-center gap-5">
+            <Link href="/mentions-legales" className="hover:text-slate-600 transition-colors">Mentions légales</Link>
+            <Link href="/politique-de-confidentialite" className="hover:text-slate-600 transition-colors">Confidentialité</Link>
+            <Link href="/cgu" className="hover:text-slate-600 transition-colors">CGU</Link>
+          </div>
         </div>
       </footer>
     </div>
