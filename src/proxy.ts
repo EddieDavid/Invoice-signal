@@ -6,7 +6,7 @@ const secret = new TextEncoder().encode(
   process.env.NEXTAUTH_SECRET || "invoice-signal-secret-local"
 );
 
-const PUBLIC_PATHS = ["/", "/connexion", "/inscription", "/login", "/pay", "/api/auth"];
+const PUBLIC_PATHS = ["/", "/connexion", "/inscription", "/login", "/pay", "/api/auth", "/mot-de-passe-oublie", "/reinitialiser-mot-de-passe"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
