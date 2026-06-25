@@ -3,9 +3,20 @@ import { requireAuth } from "@/lib/auth";
 import { getCompanyPlan, isPro } from "@/lib/plan";
 import ProGate from "@/components/ProGate";
 import ClientDelayInput from "@/components/ClientDelayInput";
+import { scoreClient, detectDegradation, CLIENT_RISK_LABELS, type ClientRiskScore } from "@/lib/scoring";
 
 function getDaysOverdue(dueDate: Date): number {
   return Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function ClientScoreBadge({ score }: { score: ClientRiskScore }) {
+  const { label, className, dot } = CLIENT_RISK_LABELS[score];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      {label}
+    </span>
+  );
 }
 
 export default async function ClientsPage() {
@@ -36,7 +47,7 @@ export default async function ClientsPage() {
 
   const profileMap = new Map(clientProfiles.map((p) => [p.clientEmail, p]));
 
-  const clientMap = new Map<string, {
+  type ClientData = {
     name: string;
     email: string;
     totalInvoices: number;
@@ -45,20 +56,42 @@ export default async function ClientsPage() {
     totalDaysLate: number;
     unpaidAmount: number;
     maxReminders: number;
-  }>();
+    // for client scoring
+    totalPaidInvoices: number;
+    paidLateCount: number;
+    sumDaysLateForScore: number;
+    hasUnpaidOldInvoice: boolean;
+    paidEntries: { updatedAt: Date; daysLate: number }[];
+  };
+
+  const clientMap = new Map<string, ClientData>();
 
   for (const inv of invoices) {
     const key = inv.clientEmail;
     if (!clientMap.has(key)) {
-      clientMap.set(key, { name: inv.clientName, email: inv.clientEmail, totalInvoices: 0, paidInvoices: 0, lateInvoices: 0, totalDaysLate: 0, unpaidAmount: 0, maxReminders: 0 });
+      clientMap.set(key, {
+        name: inv.clientName, email: inv.clientEmail,
+        totalInvoices: 0, paidInvoices: 0, lateInvoices: 0,
+        totalDaysLate: 0, unpaidAmount: 0, maxReminders: 0,
+        totalPaidInvoices: 0, paidLateCount: 0, sumDaysLateForScore: 0,
+        hasUnpaidOldInvoice: false, paidEntries: [],
+      });
     }
     const c = clientMap.get(key)!;
     c.totalInvoices++;
     const reminderStep = inv.reminders[0]?.step ?? 0;
     if (reminderStep > c.maxReminders) c.maxReminders = reminderStep;
+
     if (inv.status === "paid") {
       c.paidInvoices++;
-      if (reminderStep > 0) c.lateInvoices++;
+      c.totalPaidInvoices++;
+      if (reminderStep > 0) {
+        c.lateInvoices++;
+        c.paidLateCount++;
+      }
+      const daysLate = Math.floor((inv.updatedAt.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      c.sumDaysLateForScore += daysLate;
+      c.paidEntries.push({ updatedAt: inv.updatedAt, daysLate });
     } else {
       c.unpaidAmount += inv.amount;
       const daysOverdue = getDaysOverdue(inv.dueDate);
@@ -66,6 +99,7 @@ export default async function ClientsPage() {
         c.lateInvoices++;
         c.totalDaysLate += daysOverdue;
       }
+      if (daysOverdue > 60) c.hasUnpaidOldInvoice = true;
     }
   }
 
@@ -94,21 +128,40 @@ export default async function ClientsPage() {
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Payées</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">En retard</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Montant impayé</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Comportement</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Score client</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Délai relance</th>
               </tr>
             </thead>
             <tbody>
               {clients.map((client) => {
                 const lateRate = client.totalInvoices > 0 ? Math.round((client.lateInvoices / client.totalInvoices) * 100) : 0;
-                const avgDaysLate = client.lateInvoices > 0 ? Math.round(client.totalDaysLate / client.lateInvoices) : 0;
-                const isRisk = client.lateInvoices >= 2 || client.maxReminders >= 3;
+                const avgDaysLate = client.totalPaidInvoices > 0
+                  ? Math.round(client.sumDaysLateForScore / client.totalPaidInvoices)
+                  : 0;
                 const profile = profileMap.get(client.email);
+
+                const clientScore = scoreClient({
+                  totalPaidInvoices: client.totalPaidInvoices,
+                  paidLateCount: client.paidLateCount,
+                  avgDaysLate: client.totalPaidInvoices > 0 ? client.sumDaysLateForScore / client.totalPaidInvoices : 0,
+                  hasUnpaidOldInvoice: client.hasUnpaidOldInvoice,
+                });
+
+                const sortedDaysLate = client.paidEntries
+                  .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+                  .map((e) => e.daysLate);
+                const { isDegrading, extraDays } = detectDegradation(sortedDaysLate, client.totalInvoices);
+
                 return (
                   <tr key={client.email} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900">{client.name}</div>
                       <div className="text-gray-400 text-xs">{client.email}</div>
+                      {isDegrading && (
+                        <div className="mt-1 inline-flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                          ↗ Comportement en dégradation · paie {extraDays}j plus lentement que d'habitude
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-700">{client.totalInvoices}</td>
                     <td className="px-4 py-3 text-right text-green-600 font-medium">{client.paidInvoices}</td>
@@ -130,21 +183,12 @@ export default async function ClientsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        {isRisk ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-red-600 font-medium">
-                            ⚠️ Payeur à risque
+                        <ClientScoreBadge score={clientScore} />
+                        {client.totalPaidInvoices > 0 && (
+                          <span className="text-xs text-gray-400">
+                            {lateRate}% en retard
+                            {avgDaysLate > 0 ? ` · moy. ${avgDaysLate}j après échéance` : avgDaysLate < 0 ? ` · moy. ${Math.abs(avgDaysLate)}j avant échéance` : ""}
                           </span>
-                        ) : client.lateInvoices === 0 ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                            ✓ Payeur fiable
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
-                            ~ Retards occasionnels
-                          </span>
-                        )}
-                        {lateRate > 0 && (
-                          <span className="text-xs text-gray-400">{lateRate}% en retard{avgDaysLate > 0 ? ` · moy. ${avgDaysLate}j` : ""}</span>
                         )}
                       </div>
                     </td>

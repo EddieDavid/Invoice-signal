@@ -3,7 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import InvoiceTable from "@/components/InvoiceTable";
 import ProGate from "@/components/ProGate";
 import Link from "next/link";
-import { scoreInvoice } from "@/lib/scoring";
+import { scoreInvoice, scoreClient, detectDegradation, type ClientRiskScore } from "@/lib/scoring";
 import { getCompanyPlan, isPro } from "@/lib/plan";
 
 function getDaysOverdue(dueDate: Date): number {
@@ -21,22 +21,88 @@ export default async function DashboardPage() {
     include: { reminders: { orderBy: { sentAt: "desc" }, take: 1 } },
   });
 
-  const clientHistoryMap = new Map<string, { totalInvoices: number; invoicesWithReminders: number }>();
+  // --- Build per-client aggregates for scoring ---
+  type ClientAggregate = {
+    totalInvoices: number;
+    invoicesWithReminders: number;
+    totalPaidInvoices: number;
+    paidLateCount: number;
+    totalDaysLate: number;
+    hasUnpaidOldInvoice: boolean;
+    paidEntries: { updatedAt: Date; daysLate: number }[];
+  };
+
+  const clientAggMap = new Map<string, ClientAggregate>();
+
   for (const inv of invoices) {
     const email = inv.clientEmail;
-    if (!clientHistoryMap.has(email)) {
-      clientHistoryMap.set(email, { totalInvoices: 0, invoicesWithReminders: 0 });
+    if (!clientAggMap.has(email)) {
+      clientAggMap.set(email, {
+        totalInvoices: 0,
+        invoicesWithReminders: 0,
+        totalPaidInvoices: 0,
+        paidLateCount: 0,
+        totalDaysLate: 0,
+        hasUnpaidOldInvoice: false,
+        paidEntries: [],
+      });
     }
-    const h = clientHistoryMap.get(email)!;
-    h.totalInvoices++;
-    if ((inv.reminders[0]?.step ?? 0) > 0) h.invoicesWithReminders++;
+    const agg = clientAggMap.get(email)!;
+    agg.totalInvoices++;
+    const reminderStep = inv.reminders[0]?.step ?? 0;
+    if (reminderStep > 0) agg.invoicesWithReminders++;
+
+    if (inv.status === "paid") {
+      agg.totalPaidInvoices++;
+      if (reminderStep > 0) agg.paidLateCount++;
+      const daysLate = Math.floor((inv.updatedAt.getTime() - inv.dueDate.getTime()) / (1000 * 60 * 60 * 24));
+      agg.totalDaysLate += daysLate;
+      agg.paidEntries.push({ updatedAt: inv.updatedAt, daysLate });
+    } else {
+      const daysOverdue = getDaysOverdue(inv.dueDate);
+      if (daysOverdue > 60) agg.hasUnpaidOldInvoice = true;
+    }
   }
 
+  // --- Compute client risk scores & degradation ---
+  const clientScoreMap = new Map<string, ClientRiskScore>();
+  let degradingClientsCount = 0;
+
+  for (const [email, agg] of clientAggMap) {
+    const avgDaysLate = agg.totalPaidInvoices > 0 ? agg.totalDaysLate / agg.totalPaidInvoices : 0;
+    const score = scoreClient({
+      totalPaidInvoices: agg.totalPaidInvoices,
+      paidLateCount: agg.paidLateCount,
+      avgDaysLate,
+      hasUnpaidOldInvoice: agg.hasUnpaidOldInvoice,
+    });
+    clientScoreMap.set(email, score);
+
+    const sortedDaysLate = agg.paidEntries
+      .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+      .map((e) => e.daysLate);
+    const { isDegrading } = detectDegradation(sortedDaysLate, agg.totalInvoices);
+    if (isDegrading) degradingClientsCount++;
+  }
+
+  // --- Score each invoice ---
   const tableData = invoices.map((inv) => {
     const daysOverdue = getDaysOverdue(inv.dueDate);
     const lastReminderStep = inv.reminders[0]?.step ?? 0;
-    const clientHistory = clientHistoryMap.get(inv.clientEmail) ?? { totalInvoices: 1, invoicesWithReminders: 0 };
+    const clientHistory = {
+      totalInvoices: clientAggMap.get(inv.clientEmail)?.totalInvoices ?? 1,
+      invoicesWithReminders: clientAggMap.get(inv.clientEmail)?.invoicesWithReminders ?? 0,
+    };
     const { riskScore, recommendedAction } = scoreInvoice(daysOverdue, lastReminderStep, inv.status, clientHistory);
+
+    // Early warning: not yet due + client at risk
+    const clientScore = clientScoreMap.get(inv.clientEmail) ?? "no_history";
+    let earlyWarning: "watch" | "mention" | null = null;
+    if (inv.status !== "paid" && daysOverdue <= 0) {
+      if (clientScore === "red") earlyWarning = "watch";
+      else if (clientScore === "yellow") earlyWarning = "mention";
+    }
+
     return {
       id: inv.id,
       clientName: inv.clientName,
@@ -50,6 +116,7 @@ export default async function DashboardPage() {
       lastReminderStep,
       riskScore,
       recommendedAction,
+      earlyWarning,
     };
   });
 
@@ -97,7 +164,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Cartes Pro — montant à risque + clients à contacter + répartition */}
+      {/* Cartes Pro */}
       {pro ? (
         <>
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -116,26 +183,33 @@ export default async function DashboardPage() {
           </div>
 
           {invoices.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-4 gap-3 mb-6">
               <div className="flex items-center gap-3 bg-white rounded-xl border border-green-100 px-4 py-3">
                 <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-400">Faible risque</p>
-                  <p className="font-bold text-gray-900">{greenCount} facture{greenCount > 1 ? "s" : ""}</p>
+                  <p className="font-bold text-gray-900">{greenCount}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white rounded-xl border border-amber-100 px-4 py-3">
                 <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-400">Risque moyen</p>
-                  <p className="font-bold text-gray-900">{yellowCount} facture{yellowCount > 1 ? "s" : ""}</p>
+                  <p className="font-bold text-gray-900">{yellowCount}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white rounded-xl border border-red-100 px-4 py-3">
                 <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-400">Risque élevé</p>
-                  <p className="font-bold text-gray-900">{redCount} facture{redCount > 1 ? "s" : ""}</p>
+                  <p className="font-bold text-gray-900">{redCount}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white rounded-xl border border-orange-100 px-4 py-3">
+                <div className="w-3 h-3 rounded-full bg-orange-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">En dégradation</p>
+                  <p className="font-bold text-gray-900">{degradingClientsCount}</p>
                 </div>
               </div>
             </div>

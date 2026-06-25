@@ -17,6 +17,7 @@ type Invoice = {
   lastReminderStep: number;
   riskScore: RiskScore;
   recommendedAction: RecommendedAction;
+  earlyWarning?: "watch" | "mention" | null;
 };
 
 type Toast = { id: number; message: string; type: "success" | "error" };
@@ -358,7 +359,23 @@ export default function InvoiceTable({ invoices, pro = false }: { invoices: Invo
                     <td className="px-4 py-3.5 text-right font-semibold text-gray-900">
                       {inv.amount.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
                     </td>
-                    {pro && <td className="px-4 py-3.5"><RiskBadge score={inv.riskScore} /></td>}
+                    {pro && (
+                      <td className="px-4 py-3.5">
+                        {inv.earlyWarning === "watch" ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                            À surveiller
+                          </span>
+                        ) : (
+                          <div>
+                            <RiskBadge score={inv.riskScore} />
+                            {inv.earlyWarning === "mention" && (
+                              <div className="text-xs text-orange-500 mt-0.5">Client à surveiller</div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3.5"><StatusBadge status={inv.status} /></td>
                     <td className="px-4 py-3.5 text-gray-500 text-xs">{inv.lastReminderStep}/4</td>
                     {pro && (
