@@ -43,12 +43,15 @@ export async function POST(request: Request) {
   const daysOverdue = Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / (1000 * 60 * 60 * 24)));
   const paymentLink = getPaymentLink(invoice.id);
 
+  const settings = await prisma.settings.findUnique({ where: { companyId }, select: { paymentInfo: true } });
+
   const vars = {
     nom_client: invoice.clientName,
     montant: invoice.amount.toFixed(2),
     numero_facture: invoice.invoiceNumber,
     jours_retard: String(daysOverdue),
     lien_paiement: paymentLink,
+    coordonnees_bancaires: settings?.paymentInfo ?? "",
   };
 
   const resolvedBody = applyTemplate(template.body, vars);

@@ -14,12 +14,15 @@ const STEP_LABELS = ["", "1er rappel (courtois)", "2e relance", "3e relance (fer
 export default function SettingsForm({
   templates,
   interval,
+  paymentInfo,
 }: {
   templates: Template[];
   interval: number;
+  paymentInfo: string;
 }) {
   const [localTemplates, setLocalTemplates] = useState(templates);
   const [localInterval, setLocalInterval] = useState(interval);
+  const [localPaymentInfo, setLocalPaymentInfo] = useState(paymentInfo);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState(1);
@@ -35,7 +38,7 @@ export default function SettingsForm({
     await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ templates: localTemplates, interval: localInterval }),
+      body: JSON.stringify({ templates: localTemplates, interval: localInterval, paymentInfo: localPaymentInfo }),
     });
     setSaving(false);
     setSaved(true);
@@ -46,6 +49,22 @@ export default function SettingsForm({
 
   return (
     <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 className="font-medium text-gray-900 mb-1">Coordonnées bancaires</h2>
+        <p className="text-xs text-gray-400 mb-3">
+          Apparaît dans vos emails de relance via la variable{" "}
+          <code className="bg-gray-100 px-1 rounded">{"{coordonnees_bancaires}"}</code>.
+          Indiquez votre IBAN, BIC, ou tout autre moyen de paiement accepté.
+        </p>
+        <textarea
+          value={localPaymentInfo}
+          onChange={(e) => setLocalPaymentInfo(e.target.value)}
+          rows={4}
+          placeholder={"Pour régler cette facture par virement :\nIBAN : FR76 XXXX XXXX XXXX XXXX XXXX XXX\nBIC : XXXXXXXX\nBanque : Nom de votre banque"}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h2 className="font-medium text-gray-900 mb-3">Délai entre les relances</h2>
         <div className="flex items-center gap-3">
@@ -107,7 +126,8 @@ export default function SettingsForm({
               <code className="bg-gray-100 px-1 rounded">{"{montant}"}</code>{" "}
               <code className="bg-gray-100 px-1 rounded">{"{numero_facture}"}</code>{" "}
               <code className="bg-gray-100 px-1 rounded">{"{jours_retard}"}</code>{" "}
-              <code className="bg-gray-100 px-1 rounded">{"{lien_paiement}"}</code>
+              <code className="bg-gray-100 px-1 rounded">{"{lien_paiement}"}</code>{" "}
+              <code className="bg-gray-100 px-1 rounded">{"{coordonnees_bancaires}"}</code>
             </p>
           </div>
         )}

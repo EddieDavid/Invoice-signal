@@ -74,4 +74,5 @@ model Settings {
   companyId        String  @unique
   company          Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   reminderInterval Int     @default(5)
+  paymentInfo      String?
 }

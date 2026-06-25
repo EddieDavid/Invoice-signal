@@ -35,7 +35,7 @@ export default async function SettingsPage() {
           Personnalisez vos emails de relance et les délais entre envois.
         </p>
       </div>
-      <SettingsForm templates={templates} interval={settings.reminderInterval} />
+      <SettingsForm templates={templates} interval={settings.reminderInterval} paymentInfo={settings.paymentInfo ?? ""} />
       <PlanSelector currentPlan={plan} />
     </div>
   );

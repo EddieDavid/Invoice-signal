@@ -8,8 +8,7 @@ Nous vous contactons afin de vous rappeler que la facture n°{numero_facture} d'
 
 Si vous avez déjà effectué ce paiement, veuillez ignorer ce message.
 
-Pour régler cette facture, cliquez sur le lien ci-dessous :
-{lien_paiement}
+{coordonnees_bancaires}
 
 Cordialement,
 L'équipe comptable`,
@@ -23,8 +22,7 @@ Sauf erreur de notre part, la facture n°{numero_facture} d'un montant de {monta
 
 Nous vous remercions de bien vouloir régulariser cette situation dans les meilleurs délais.
 
-Lien de paiement :
-{lien_paiement}
+{coordonnees_bancaires}
 
 Cordialement,
 L'équipe comptable`,
@@ -40,8 +38,7 @@ Nous vous demandons de procéder au règlement de cette somme sous 48 heures.
 
 Sans retour de votre part, nous serons contraints d'engager une procédure de recouvrement.
 
-Lien de paiement :
-{lien_paiement}
+{coordonnees_bancaires}
 
 Cordialement,
 L'équipe comptable`,
@@ -55,8 +52,7 @@ Par la présente, nous vous mettons en demeure de régler la facture n°{numero_
 
 À défaut de paiement sous 72 heures, nous transmettrons ce dossier à notre service contentieux.
 
-Lien de paiement :
-{lien_paiement}
+{coordonnees_bancaires}
 
 Cordialement,
 L'équipe comptable`,
@@ -71,6 +67,7 @@ export function applyTemplate(
     numero_facture: string;
     jours_retard: string;
     lien_paiement: string;
+    coordonnees_bancaires?: string;
   }
 ): string {
   return template
@@ -78,5 +75,6 @@ export function applyTemplate(
     .replace(/{montant}/g, vars.montant)
     .replace(/{numero_facture}/g, vars.numero_facture)
     .replace(/{jours_retard}/g, vars.jours_retard)
-    .replace(/{lien_paiement}/g, vars.lien_paiement);
+    .replace(/{lien_paiement}/g, vars.lien_paiement)
+    .replace(/{coordonnees_bancaires}/g, vars.coordonnees_bancaires ?? "");
 }

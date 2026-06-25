@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   const { companyId } = session;
 
-  const { templates, interval } = await request.json();
+  const { templates, interval, paymentInfo } = await request.json();
 
   for (const t of templates) {
     await prisma.emailTemplate.upsert({
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
 
   await prisma.settings.upsert({
     where: { companyId },
-    create: { companyId, reminderInterval: interval },
-    update: { reminderInterval: interval },
+    create: { companyId, reminderInterval: interval, paymentInfo: paymentInfo ?? null },
+    update: { reminderInterval: interval, paymentInfo: paymentInfo ?? null },
   });
 
   return NextResponse.json({ ok: true });
