@@ -6,6 +6,7 @@ import { applyTemplate, DEFAULT_TEMPLATES } from "@/lib/templates";
 import { getPaymentLink } from "@/lib/payment";
 import { trackEvent } from "@/lib/analytics";
 import { personalizeReminderEmail } from "@/lib/ai";
+import { getCompanyPlan, isPro } from "@/lib/plan";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -52,9 +53,10 @@ export async function POST(request: Request) {
 
   const resolvedBody = applyTemplate(template.body, vars);
 
-  // Personnalisation IA pour les relances 2, 3 et 4 uniquement
+  const plan = await getCompanyPlan(companyId);
+  // Personnalisation IA pour les relances 2, 3 et 4 uniquement (Pro)
   let finalBody = resolvedBody;
-  if (nextStep >= 2) {
+  if (nextStep >= 2 && isPro(plan)) {
     const clientInvoices = await prisma.invoice.findMany({
       where: { companyId, clientEmail: invoice.clientEmail },
       include: { _count: { select: { reminders: true } } },

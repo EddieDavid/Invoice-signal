@@ -12,11 +12,23 @@ model Company {
   name         String
   email        String   @unique
   passwordHash String
+  plan         String   @default("starter")
   createdAt    DateTime @default(now())
 
-  invoices      Invoice[]
-  templates     EmailTemplate[]
-  settings      Settings?
+  invoices        Invoice[]
+  templates       EmailTemplate[]
+  settings        Settings?
+  clientProfiles  ClientProfile[]
+}
+
+model ClientProfile {
+  id                     String  @id @default(cuid())
+  companyId              String
+  company                Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientEmail            String
+  customReminderInterval Int?
+
+  @@unique([companyId, clientEmail])
 }
 
 model Invoice {

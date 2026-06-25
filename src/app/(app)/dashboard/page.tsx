@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import InvoiceTable from "@/components/InvoiceTable";
+import ProGate from "@/components/ProGate";
 import Link from "next/link";
 import { scoreInvoice } from "@/lib/scoring";
+import { getCompanyPlan, isPro } from "@/lib/plan";
 
 function getDaysOverdue(dueDate: Date): number {
   return Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -10,6 +12,8 @@ function getDaysOverdue(dueDate: Date): number {
 
 export default async function DashboardPage() {
   const { companyId } = await requireAuth();
+  const plan = await getCompanyPlan(companyId);
+  const pro = isPro(plan);
 
   const invoices = await prisma.invoice.findMany({
     where: { companyId },
@@ -17,7 +21,6 @@ export default async function DashboardPage() {
     include: { reminders: { orderBy: { sentAt: "desc" }, take: 1 } },
   });
 
-  // Build client history map
   const clientHistoryMap = new Map<string, { totalInvoices: number; invoicesWithReminders: number }>();
   for (const inv of invoices) {
     const email = inv.clientEmail;
@@ -50,7 +53,6 @@ export default async function DashboardPage() {
     };
   });
 
-  // Summary stats
   const unpaid = tableData.filter((inv) => inv.status !== "paid");
   const totalUnpaid = unpaid.reduce((sum, inv) => sum + inv.amount, 0);
   const atRisk = unpaid.filter((inv) => inv.riskScore === "yellow" || inv.riskScore === "red");
@@ -67,31 +69,26 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
           <p className="text-gray-500 text-sm mt-1">{invoices.length} facture(s) au total</p>
         </div>
-        <Link href="/import" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-          + Importer un CSV
-        </Link>
+        <div className="flex items-center gap-3">
+          {!pro && (
+            <span className="text-xs bg-violet-100 text-violet-700 font-semibold px-3 py-1.5 rounded-full">
+              Plan Starter
+            </span>
+          )}
+          <Link href="/import" className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+            + Importer un CSV
+          </Link>
+        </div>
       </div>
 
-      {/* Cartes stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* Cartes stats — visibles pour tous */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div className="bg-white rounded-2xl border border-gray-200 p-5">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Total impayé</p>
           <p className="text-3xl font-bold text-gray-900">
             {totalUnpaid.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
           </p>
           <p className="text-xs text-gray-400 mt-2">{unpaid.length} facture{unpaid.length > 1 ? "s" : ""} en cours</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-red-100 p-5">
-          <p className="text-xs font-medium text-red-400 uppercase tracking-wide mb-3">Montant à risque</p>
-          <p className="text-3xl font-bold text-red-600">
-            {amountAtRisk.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
-          </p>
-          <p className="text-xs text-red-300 mt-2">risque moyen + élevé</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-orange-100 p-5">
-          <p className="text-xs font-medium text-orange-400 uppercase tracking-wide mb-3">Clients à contacter</p>
-          <p className="text-3xl font-bold text-orange-600">{needsAction.length}</p>
-          <p className="text-xs text-orange-300 mt-2">appel ou mise en demeure</p>
         </div>
         <div className="bg-white rounded-2xl border border-green-100 p-5">
           <p className="text-xs font-medium text-green-500 uppercase tracking-wide mb-3">Factures payées</p>
@@ -100,30 +97,53 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Répartition risque */}
-      {invoices.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="flex items-center gap-3 bg-white rounded-xl border border-green-100 px-4 py-3">
-            <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-gray-400">Faible risque</p>
-              <p className="font-bold text-gray-900">{greenCount} facture{greenCount > 1 ? "s" : ""}</p>
+      {/* Cartes Pro — montant à risque + clients à contacter + répartition */}
+      {pro ? (
+        <>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-white rounded-2xl border border-red-100 p-5">
+              <p className="text-xs font-medium text-red-400 uppercase tracking-wide mb-3">Montant à risque</p>
+              <p className="text-3xl font-bold text-red-600">
+                {amountAtRisk.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+              </p>
+              <p className="text-xs text-red-300 mt-2">risque moyen + élevé</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-orange-100 p-5">
+              <p className="text-xs font-medium text-orange-400 uppercase tracking-wide mb-3">Clients à contacter</p>
+              <p className="text-3xl font-bold text-orange-600">{needsAction.length}</p>
+              <p className="text-xs text-orange-300 mt-2">appel ou mise en demeure</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 bg-white rounded-xl border border-amber-100 px-4 py-3">
-            <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-gray-400">Risque moyen</p>
-              <p className="font-bold text-gray-900">{yellowCount} facture{yellowCount > 1 ? "s" : ""}</p>
+
+          {invoices.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              <div className="flex items-center gap-3 bg-white rounded-xl border border-green-100 px-4 py-3">
+                <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Faible risque</p>
+                  <p className="font-bold text-gray-900">{greenCount} facture{greenCount > 1 ? "s" : ""}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white rounded-xl border border-amber-100 px-4 py-3">
+                <div className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Risque moyen</p>
+                  <p className="font-bold text-gray-900">{yellowCount} facture{yellowCount > 1 ? "s" : ""}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white rounded-xl border border-red-100 px-4 py-3">
+                <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Risque élevé</p>
+                  <p className="font-bold text-gray-900">{redCount} facture{redCount > 1 ? "s" : ""}</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3 bg-white rounded-xl border border-red-100 px-4 py-3">
-            <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-            <div>
-              <p className="text-xs text-gray-400">Risque élevé</p>
-              <p className="font-bold text-gray-900">{redCount} facture{redCount > 1 ? "s" : ""}</p>
-            </div>
-          </div>
+          )}
+        </>
+      ) : (
+        <div className="mb-6">
+          <ProGate feature="Vue d'ensemble du risque (Montant à risque, Clients à contacter, Répartition Vert/Jaune/Rouge)" />
         </div>
       )}
 
@@ -142,7 +162,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
       ) : (
-        <InvoiceTable invoices={tableData} />
+        <InvoiceTable invoices={tableData} pro={pro} />
       )}
     </div>
   );

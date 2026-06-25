@@ -65,7 +65,7 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return <span className="text-blue-600 ml-1">{dir === "asc" ? "↑" : "↓"}</span>;
 }
 
-export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
+export default function InvoiceTable({ invoices, pro = false }: { invoices: Invoice[]; pro?: boolean }) {
   const router = useRouter();
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -215,7 +215,12 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         {/* En-tête tableau */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
+            {!pro && (
+              <span className="text-xs text-violet-600 bg-violet-50 px-2 py-1 rounded-lg font-medium mr-2">
+                ✨ Score de risque disponible en Pro
+              </span>
+            )}
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -299,23 +304,25 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
               <th className="text-right px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide cursor-pointer hover:text-gray-700 select-none" onClick={() => toggleSort("amount")}>
                 Montant <SortIcon active={sortKey === "amount"} dir={sortDir} />
               </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide cursor-pointer hover:text-gray-700 select-none" onClick={() => toggleSort("riskScore")}>
-                Risque <SortIcon active={sortKey === "riskScore"} dir={sortDir} />
-              </th>
+              {pro && (
+                <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide cursor-pointer hover:text-gray-700 select-none" onClick={() => toggleSort("riskScore")}>
+                  Risque <SortIcon active={sortKey === "riskScore"} dir={sortDir} />
+                </th>
+              )}
               <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide cursor-pointer hover:text-gray-700 select-none" onClick={() => toggleSort("status")}>
                 Statut <SortIcon active={sortKey === "status"} dir={sortDir} />
               </th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide cursor-pointer hover:text-gray-700 select-none" onClick={() => toggleSort("lastReminderStep")}>
                 Relances <SortIcon active={sortKey === "lastReminderStep"} dir={sortDir} />
               </th>
-              <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">À faire</th>
+              {pro && <th className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">À faire</th>}
               <th className="text-right px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="text-center py-12 text-gray-400 text-sm">
+                <td colSpan={pro ? 11 : 9} className="text-center py-12 text-gray-400 text-sm">
                   Aucune facture ne correspond à votre recherche.
                 </td>
               </tr>
@@ -351,18 +358,20 @@ export default function InvoiceTable({ invoices }: { invoices: Invoice[] }) {
                     <td className="px-4 py-3.5 text-right font-semibold text-gray-900">
                       {inv.amount.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
                     </td>
-                    <td className="px-4 py-3.5"><RiskBadge score={inv.riskScore} /></td>
+                    {pro && <td className="px-4 py-3.5"><RiskBadge score={inv.riskScore} /></td>}
                     <td className="px-4 py-3.5"><StatusBadge status={inv.status} /></td>
                     <td className="px-4 py-3.5 text-gray-500 text-xs">{inv.lastReminderStep}/4</td>
-                    <td className="px-4 py-3.5">
-                      <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${
-                        inv.recommendedAction === "formal_notice" ? "text-red-600 font-medium" :
-                        inv.recommendedAction === "call" ? "text-orange-600 font-medium" :
-                        inv.recommendedAction === "in_progress" ? "text-blue-600" : "text-gray-400"
-                      }`}>
-                        {action.icon} {action.label}
-                      </span>
-                    </td>
+                    {pro && (
+                      <td className="px-4 py-3.5">
+                        <span className={`text-xs flex items-center gap-1 whitespace-nowrap ${
+                          inv.recommendedAction === "formal_notice" ? "text-red-600 font-medium" :
+                          inv.recommendedAction === "call" ? "text-orange-600 font-medium" :
+                          inv.recommendedAction === "in_progress" ? "text-blue-600" : "text-gray-400"
+                        }`}>
+                          {action.icon} {action.label}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1.5 justify-end">
                         {canRelance && (

@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
+import { getCompanyPlan, isPro } from "@/lib/plan";
+import ProGate from "@/components/ProGate";
+import ClientDelayInput from "@/components/ClientDelayInput";
 
 function getDaysOverdue(dueDate: Date): number {
   return Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -7,14 +10,32 @@ function getDaysOverdue(dueDate: Date): number {
 
 export default async function ClientsPage() {
   const { companyId } = await requireAuth();
+  const plan = await getCompanyPlan(companyId);
+  const pro = isPro(plan);
 
-  const invoices = await prisma.invoice.findMany({
-    where: { companyId },
-    include: { reminders: { orderBy: { sentAt: "desc" }, take: 1 } },
-    orderBy: { createdAt: "asc" },
-  });
+  if (!pro) {
+    return (
+      <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Fiches clients</h1>
+          <p className="text-gray-500 text-sm mt-1">Historique et comportement de paiement par client</p>
+        </div>
+        <ProGate feature="Fiches clients — Historique de paiement, comportement et délai personnalisé par client" />
+      </div>
+    );
+  }
 
-  // Aggregation par client
+  const [invoices, clientProfiles] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { companyId },
+      include: { reminders: { orderBy: { sentAt: "desc" }, take: 1 } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.clientProfile.findMany({ where: { companyId } }),
+  ]);
+
+  const profileMap = new Map(clientProfiles.map((p) => [p.clientEmail, p]));
+
   const clientMap = new Map<string, {
     name: string;
     email: string;
@@ -74,6 +95,7 @@ export default async function ClientsPage() {
                 <th className="text-right px-4 py-3 font-medium text-gray-600">En retard</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Montant impayé</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Comportement</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Délai relance</th>
               </tr>
             </thead>
             <tbody>
@@ -81,6 +103,7 @@ export default async function ClientsPage() {
                 const lateRate = client.totalInvoices > 0 ? Math.round((client.lateInvoices / client.totalInvoices) * 100) : 0;
                 const avgDaysLate = client.lateInvoices > 0 ? Math.round(client.totalDaysLate / client.lateInvoices) : 0;
                 const isRisk = client.lateInvoices >= 2 || client.maxReminders >= 3;
+                const profile = profileMap.get(client.email);
                 return (
                   <tr key={client.email} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -124,6 +147,12 @@ export default async function ClientsPage() {
                           <span className="text-xs text-gray-400">{lateRate}% en retard{avgDaysLate > 0 ? ` · moy. ${avgDaysLate}j` : ""}</span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <ClientDelayInput
+                        clientEmail={client.email}
+                        initialInterval={profile?.customReminderInterval ?? null}
+                      />
                     </td>
                   </tr>
                 );

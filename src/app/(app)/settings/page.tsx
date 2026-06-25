@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import SettingsForm from "@/components/SettingsForm";
+import PlanSelector from "@/components/PlanSelector";
 import { DEFAULT_TEMPLATES } from "@/lib/templates";
 
 export default async function SettingsPage() {
   const { companyId } = await requireAuth();
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { plan: true } });
+  const plan = company?.plan ?? "starter";
 
   for (const tpl of DEFAULT_TEMPLATES) {
     await prisma.emailTemplate.upsert({
@@ -33,6 +36,7 @@ export default async function SettingsPage() {
         </p>
       </div>
       <SettingsForm templates={templates} interval={settings.reminderInterval} />
+      <PlanSelector currentPlan={plan} />
     </div>
   );
 }
