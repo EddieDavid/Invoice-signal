@@ -148,18 +148,43 @@ export default async function DashboardPage() {
       )}
 
       {invoices.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <p className="text-4xl mb-3">📄</p>
-          <p className="text-gray-700 font-medium">Aucune facture importée</p>
-          <p className="text-gray-400 text-sm mt-1 mb-4">
-            Importez votre premier fichier CSV pour commencer.{" "}
-            <a href="/factures_test.csv" download className="text-blue-600 hover:underline">
-              Télécharger le fichier CSV d'exemple
-            </a>
-          </p>
-          <Link href="/import" className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-            Importer un CSV
-          </Link>
+        <div className="space-y-4">
+          <div className="bg-gradient-to-br from-violet-50 to-blue-50 rounded-2xl border border-violet-100 p-8">
+            <div className="max-w-lg">
+              <p className="text-xs font-semibold text-violet-500 uppercase tracking-wide mb-2">Bienvenue sur InvoiceSignal</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Commencez en 3 étapes</h2>
+              <p className="text-gray-500 text-sm mb-7">Votre tableau de bord est prêt. Il ne reste plus qu'à importer vos factures.</p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #6C63FF, #4f46e5)" }}>1</div>
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">Téléchargez le fichier CSV d'exemple</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Pour voir le bon format à utiliser</p>
+                    <a href="/factures_test.csv" download className="inline-block mt-2 text-xs text-violet-600 hover:underline font-medium">
+                      Télécharger l'exemple →
+                    </a>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0" style={{ background: "linear-gradient(135deg, #6C63FF, #4f46e5)" }}>2</div>
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">Importez vos factures en CSV</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Nom client, email, numéro, montant, date d'échéance</p>
+                    <Link href="/import" className="inline-block mt-2 text-xs font-semibold text-white px-4 py-1.5 rounded-full transition-all hover:opacity-90" style={{ background: "linear-gradient(135deg, #6C63FF, #4f46e5)" }}>
+                      Importer un CSV
+                    </Link>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 bg-gray-200 text-gray-400">3</div>
+                  <div>
+                    <p className="font-medium text-gray-400 text-sm">Envoyez vos premières relances</p>
+                    <p className="text-gray-300 text-xs mt-0.5">Sélectionnez les factures et relancez en un clic</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <InvoiceTable invoices={tableData} pro={pro} />
