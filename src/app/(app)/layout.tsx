@@ -38,6 +38,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <span>📬</span> Boîte simulée
             </Link>
           )}
+          <Link href="/clients" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+            <span>👥</span> Clients
+          </Link>
           <Link href="/settings" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
             <span>⚙️</span> Paramètres
           </Link>

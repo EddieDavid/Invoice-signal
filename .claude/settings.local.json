@@ -16,7 +16,15 @@
       "Bash(awk '{print $2}')",
       "Bash(xargs kill)",
       "Bash(npx tsc *)",
-      "Bash(node_modules/.bin/tsc --noEmit)"
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(nc -zv db.kafutqfqtotvwfrsjbjk.supabase.co 5432)",
+      "Bash(nslookup db.kafutqfqtofvwfrsjbjk.supabase.co)",
+      "Bash(host db.kafutqfqtofvwfrsjbjk.supabase.co)",
+      "Bash(dig TXT invoicesignal.io +short)",
+      "Bash(dig TXT _dmarc.invoicesignal.io +short)",
+      "Bash(dig MX invoicesignal.io +short)",
+      "Bash(dig TXT resend._domainkey.invoicesignal.io +short)",
+      "Bash(dig CNAME resend._domainkey.invoicesignal.io +short)"
     ]
   }
 }
