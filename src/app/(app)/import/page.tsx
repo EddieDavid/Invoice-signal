@@ -27,8 +27,12 @@ export default function ImportPage() {
     });
 
     const data = await res.json();
-    setResult(data);
     setLoading(false);
+    if (data.imported > 0) {
+      router.push(`/resume?imported=${data.imported}`);
+      return;
+    }
+    setResult(data);
   }
 
   function onDrop(e: React.DragEvent) {

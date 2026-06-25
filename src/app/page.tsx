@@ -40,10 +40,11 @@ export default function LandingPage() {
             Pour les dirigeants de TPE/PME
           </span>
           <h1 className="text-5xl font-extrabold leading-tight mb-6" style={{ color: "#1a1a4e" }}>
-            Récupérez vos<br />impayés sans<br />lever le petit doigt
+            Des milliers d'euros<br />dorment chez vos clients.<br />
+            <span style={{ background: "linear-gradient(135deg, #6C63FF, #4f46e5)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Récupérez-les.</span>
           </h1>
           <p className="text-lg text-slate-500 leading-relaxed mb-8">
-            InvoiceSignal relance automatiquement vos clients — du rappel courtois à la mise en demeure — et identifie vos factures à risque en un coup d'œil.
+            Importez vos factures, InvoiceSignal identifie ce qui vous est dû et relance vos clients automatiquement — du rappel courtois à la mise en demeure. Compatible avec votre logiciel de facturation actuel.
           </p>
           <div className="flex items-center gap-4 mb-6">
             <Link href="/inscription" className="text-sm font-semibold text-white px-7 py-3.5 rounded-full transition-all hover:opacity-90 hover:shadow-xl"
@@ -135,7 +136,7 @@ export default function LandingPage() {
           {/* Grille fonctionnalités */}
           <div className="flex-1">
             <h2 className="text-3xl font-extrabold mb-2" style={{ color: "#1a1a4e" }}>Nos fonctionnalités</h2>
-            <p className="text-slate-400 mb-10">Plus intelligent, plus rapide, plus efficace.</p>
+            <p className="text-slate-400 mb-10">Chaque euro en retard a un nom. On vous aide à le récupérer.</p>
             <div className="grid grid-cols-2 gap-6">
               {[
                 {
@@ -180,12 +181,12 @@ export default function LandingPage() {
       <section id="comment" className="py-24 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <h2 className="text-3xl font-extrabold text-center mb-3" style={{ color: "#1a1a4e" }}>Comment ça marche</h2>
-          <p className="text-slate-400 text-center mb-14">Opérationnel en moins de 5 minutes.</p>
+          <p className="text-slate-400 text-center mb-14">De l'import à la première relance en moins de 5 minutes.</p>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { num: "01", title: "Importez vos factures", desc: "Déposez votre fichier CSV ou Excel. InvoiceSignal importe toutes vos factures impayées en quelques secondes.", color: "#6C63FF" },
-              { num: "02", title: "Les relances partent seules", desc: "4 emails progressifs s'envoient automatiquement à vos clients — du rappel courtois à la mise en demeure.", color: "#ec4899" },
-              { num: "03", title: "Vous suivez en temps réel", desc: "Le dashboard vous indique QUI doit de l'argent, DEPUIS COMBIEN DE TEMPS, et QUELLE ACTION entreprendre.", color: "#10b981" },
+              { num: "01", title: "Voyez en 1 minute ce qu'on vous doit", desc: "Déposez votre CSV — InvoiceSignal calcule instantanément le total en retard, facture par facture, client par client.", color: "#6C63FF" },
+              { num: "02", title: "L'argent revient sans que vous fassiez rien", desc: "Les relances s'envoient seules, au bon moment, avec le bon ton — du rappel amical à la mise en demeure formelle.", color: "#ec4899" },
+              { num: "03", title: "Sachez exactement où agir en priorité", desc: "Score de risque, clients qui se dégradent, montants récupérables en un clic : vous voyez où votre temps vaut de l'argent.", color: "#10b981" },
             ].map((step) => (
               <div key={step.num} className="relative">
                 <div className="text-6xl font-extrabold opacity-10 mb-3 leading-none" style={{ color: step.color }}>{step.num}</div>

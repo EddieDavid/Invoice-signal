@@ -30,6 +30,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
             <span>📊</span> Dashboard
           </Link>
+          <Link href="/resume" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+            <span>⚡</span> Résumé
+          </Link>
           <Link href="/import" className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors">
             <span>📥</span> Importer un CSV
           </Link>
