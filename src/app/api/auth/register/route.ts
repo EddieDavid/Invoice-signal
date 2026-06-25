@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { registerCompany, createSession } from "@/lib/auth";
 import { trackEvent } from "@/lib/analytics";
+import { sendSimpleEmail } from "@/lib/email";
 
 export async function POST(request: Request) {
   const { name, email, password } = await request.json();
@@ -16,6 +17,25 @@ export async function POST(request: Request) {
     const company = await registerCompany(name, email, password);
     const token = await createSession(company.id);
     await trackEvent(company.id, "company_registered", { company_name: name });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://invoice-signal.vercel.app";
+    sendSimpleEmail({
+      to: email,
+      subject: "Bienvenue sur InvoiceSignal 👋",
+      body: `Bonjour ${name},
+
+Votre compte InvoiceSignal est prêt. Vous pouvez maintenant importer vos factures et envoyer vos premières relances.
+
+Pour commencer :
+1. Téléchargez le fichier CSV d'exemple : ${appUrl}/factures_test.csv
+2. Importez vos factures : ${appUrl}/import
+3. Envoyez vos premières relances depuis le tableau de bord
+
+Si vous avez la moindre question, répondez directement à cet email.
+
+Bonne recouvrement !
+Eddie — InvoiceSignal`,
+    }).catch(() => {});
 
     const response = NextResponse.json({ ok: true });
     response.cookies.set("session", token, {
